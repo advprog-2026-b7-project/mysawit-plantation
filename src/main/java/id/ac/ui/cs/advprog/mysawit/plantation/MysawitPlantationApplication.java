@@ -1,4 +1,4 @@
-package id.ac.ui.cs.advprog.mysawit.auth;
+package id.ac.ui.cs.advprog.mysawit.plantation;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
