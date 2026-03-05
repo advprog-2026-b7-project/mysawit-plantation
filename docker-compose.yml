@@ -1,20 +1,13 @@
 services:
 
-  mysawit-postgres:
-    image: postgres:16
-    container_name: mysawit-postgres
-    restart: always
+  mysawit-plantation:
+    build: .
+    container_name: mysawit-plantation
 
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      SPRING_DATASOURCE_URL: jdbc:postgresql://host.docker.internal:5435/mysawit_plantation
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
 
     ports:
-      - "5435:5432"
-
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./docker/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
-
-volumes:
-  postgres_data:
+      - "8081:8081"
