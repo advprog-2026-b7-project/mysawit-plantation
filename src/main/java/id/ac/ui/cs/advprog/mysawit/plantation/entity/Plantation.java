@@ -3,6 +3,11 @@ package id.ac.ui.cs.advprog.mysawit.plantation.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
+import jakarta.persistence.ElementCollection;
+import java.util.List;
+import java.util.UUID;
+
+import jakarta.validation.constraints.Size;
 
 @Entity
 @Table(name = "plantations")
@@ -15,7 +20,7 @@ public class Plantation {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    private String id;
+    private UUID id;
 
     @Column(unique = true, nullable = false)
     private String plantationCode;
@@ -28,6 +33,10 @@ public class Plantation {
 
     @Column(nullable = false)
     private Double areaSize;
+
+    @ElementCollection
+    @Size(min = 4, max = 4)
+    private List<Coordinate> coordinates;
 
     private LocalDateTime createdAt;
 
