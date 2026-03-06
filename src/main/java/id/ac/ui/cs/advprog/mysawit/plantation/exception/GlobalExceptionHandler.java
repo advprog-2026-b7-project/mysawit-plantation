@@ -15,4 +15,20 @@ public class GlobalExceptionHandler {
                 "error", ex.getMessage()
         );
     }
+
+    @ExceptionHandler(PlantationNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public Map<String, String> handlePlantationNotFound(PlantationNotFoundException ex) {
+        return Map.of(
+                "error", ex.getMessage()
+        );
+    }
+
+    @ExceptionHandler(PlantationCodeUpdateNotAllowedException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Map<String, String> handleCodeUpdateNotAllowed(PlantationCodeUpdateNotAllowedException ex) {
+        return Map.of(
+                "error", ex.getMessage()
+        );
+    }
 }
