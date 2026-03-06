@@ -1,17 +1,17 @@
 package id.ac.ui.cs.advprog.mysawit.plantation.dto;
 
-import lombok.Data;
-import java.util.List;
 import id.ac.ui.cs.advprog.mysawit.plantation.entity.Coordinate;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import lombok.Data;
+
+import java.util.List;
 
 @Data
-public class CreatePlantationRequest {
+public class UpdatePlantationRequest {
 
-    @NotBlank
     private String plantationCode;
 
     @NotBlank

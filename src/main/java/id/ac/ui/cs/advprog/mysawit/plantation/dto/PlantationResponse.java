@@ -12,7 +12,6 @@ public class PlantationResponse {
     private String id;
     private String plantationCode;
     private String plantationName;
-    private String location;
     private Double areaSize;
     private List<Coordinate> coordinates;
 }
