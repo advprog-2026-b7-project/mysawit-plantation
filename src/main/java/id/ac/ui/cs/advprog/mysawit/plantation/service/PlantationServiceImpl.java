@@ -2,7 +2,10 @@ package id.ac.ui.cs.advprog.mysawit.plantation.service;
 
 import id.ac.ui.cs.advprog.mysawit.plantation.dto.CreatePlantationRequest;
 import id.ac.ui.cs.advprog.mysawit.plantation.dto.PlantationResponse;
+import id.ac.ui.cs.advprog.mysawit.plantation.dto.UpdatePlantationRequest;
 import id.ac.ui.cs.advprog.mysawit.plantation.entity.Plantation;
+import id.ac.ui.cs.advprog.mysawit.plantation.exception.PlantationCodeUpdateNotAllowedException;
+import id.ac.ui.cs.advprog.mysawit.plantation.exception.PlantationNotFoundException;
 import id.ac.ui.cs.advprog.mysawit.plantation.repository.PlantationRepository;
 import id.ac.ui.cs.advprog.mysawit.plantation.exception.PlantationAlreadyExistsException;
 
@@ -10,6 +13,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -27,7 +32,6 @@ public class PlantationServiceImpl implements PlantationService {
         Plantation plantation = Plantation.builder()
                 .plantationCode(request.getPlantationCode())
                 .plantationName(request.getPlantationName())
-                .location(request.getLocation())
                 .areaSize(request.getAreaSize())
                 .coordinates(request.getCoordinates())
                 .createdAt(LocalDateTime.now())
@@ -36,13 +40,36 @@ public class PlantationServiceImpl implements PlantationService {
 
         Plantation savedPlantation = plantationRepository.save(plantation);
 
+        return toResponse(savedPlantation);
+    }
+
+    @Override
+    public PlantationResponse updatePlantation(UUID id, UpdatePlantationRequest request) {
+        Plantation plantation = plantationRepository.findById(id)
+                .orElseThrow(() -> new PlantationNotFoundException(id));
+
+        if (request.getPlantationCode() != null
+                && !Objects.equals(request.getPlantationCode(), plantation.getPlantationCode())) {
+            throw new PlantationCodeUpdateNotAllowedException();
+        }
+
+        plantation.setPlantationName(request.getPlantationName());
+        plantation.setAreaSize(request.getAreaSize());
+        plantation.setCoordinates(request.getCoordinates());
+        plantation.setUpdatedAt(LocalDateTime.now());
+
+        Plantation savedPlantation = plantationRepository.save(plantation);
+
+        return toResponse(savedPlantation);
+    }
+
+    private PlantationResponse toResponse(Plantation plantation) {
         return PlantationResponse.builder()
-                .id(savedPlantation.getId().toString())
-                .plantationCode(savedPlantation.getPlantationCode())
-                .plantationName(savedPlantation.getPlantationName())
-                .location(savedPlantation.getLocation())
-                .areaSize(savedPlantation.getAreaSize())
-                .coordinates(savedPlantation.getCoordinates())
+                .id(plantation.getId().toString())
+                .plantationCode(plantation.getPlantationCode())
+                .plantationName(plantation.getPlantationName())
+                .areaSize(plantation.getAreaSize())
+                .coordinates(plantation.getCoordinates())
                 .build();
     }
 }
