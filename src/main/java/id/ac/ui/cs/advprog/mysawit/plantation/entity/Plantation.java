@@ -46,6 +46,9 @@ public class Plantation {
     @Column(name = "mandor_id")
     private UUID mandorId;
 
+    @Column(name = "mandor_name")
+    private String mandorName;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
@@ -140,6 +143,14 @@ public class Plantation {
 
     public void setMandorId(UUID mandorId) {
         this.mandorId = mandorId;
+    }
+
+    public String getMandorName() {
+        return mandorName;
+    }
+
+    public void setMandorName(String mandorName) {
+        this.mandorName = mandorName;
     }
 
     public Instant getCreatedAt() {
