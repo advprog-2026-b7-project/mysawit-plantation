@@ -6,6 +6,7 @@ import id.ac.ui.cs.advprog.mysawit.plantation.dto.request.UpdatePlantationReques
 import id.ac.ui.cs.advprog.mysawit.plantation.dto.response.PlantationUpdateResponse;
 import id.ac.ui.cs.advprog.mysawit.plantation.entity.Plantation;
 import id.ac.ui.cs.advprog.mysawit.plantation.exception.CodeAlreadyExistsException;
+import id.ac.ui.cs.advprog.mysawit.plantation.exception.PlantationHasMandorException;
 import id.ac.ui.cs.advprog.mysawit.plantation.exception.PlantationNotFoundApiException;
 import id.ac.ui.cs.advprog.mysawit.plantation.exception.ValidationFailedException;
 import id.ac.ui.cs.advprog.mysawit.plantation.mapper.PlantationMapper;
@@ -120,5 +121,21 @@ public class PlantationService {
         plantation.setUpdatedAt(Instant.now());
         Plantation saved = plantationRepository.save(plantation);
         return plantationMapper.toUpdateResponse(saved);
+    }
+
+    @Transactional
+    public String delete(String authorizationHeader, UUID plantationId) {
+        jwtAdminGuard.requireAdmin(authorizationHeader);
+
+        Plantation plantation = plantationRepository.findById(plantationId)
+                .orElseThrow(() -> new PlantationNotFoundApiException(plantationId));
+
+        if (plantation.getMandorId() != null) {
+            throw new PlantationHasMandorException(plantation.getMandorName());
+        }
+
+        String plantationCode = plantation.getCode();
+        plantationRepository.delete(plantation);
+        return plantationCode;
     }
 }

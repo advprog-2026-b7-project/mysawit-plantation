@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import id.ac.ui.cs.advprog.mysawit.plantation.dto.request.CreatePlantationRequest;
 import id.ac.ui.cs.advprog.mysawit.plantation.dto.request.UpdatePlantationRequest;
 import id.ac.ui.cs.advprog.mysawit.plantation.dto.response.ApiSuccessResponse;
+import id.ac.ui.cs.advprog.mysawit.plantation.dto.response.ApiSuccessMessageResponse;
 import id.ac.ui.cs.advprog.mysawit.plantation.dto.response.PlantationResponse;
 import id.ac.ui.cs.advprog.mysawit.plantation.dto.response.PlantationUpdateResponse;
 import id.ac.ui.cs.advprog.mysawit.plantation.exception.CodeUpdateForbiddenException;
@@ -12,6 +13,7 @@ import id.ac.ui.cs.advprog.mysawit.plantation.service.PlantationService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -64,5 +66,18 @@ public class PlantationController {
                 request
         );
         return ResponseEntity.ok(new ApiSuccessResponse<>(data));
+    }
+
+    @DeleteMapping("/{plantationId}")
+    public ResponseEntity<ApiSuccessMessageResponse> deletePlantation(
+            @RequestHeader(value = "Authorization", required = false) String authorizationHeader,
+            @PathVariable UUID plantationId
+    ) {
+        String plantationCode = plantationService.delete(authorizationHeader, plantationId);
+        return ResponseEntity.ok(
+                new ApiSuccessMessageResponse(
+                        "Plantation " + plantationCode + " successfully deleted."
+                )
+        );
     }
 }

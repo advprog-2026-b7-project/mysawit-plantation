@@ -25,6 +25,12 @@ public class GlobalExceptionHandler {
                     overlapException.getConflictCode()
             );
             details.add(new ApiErrorDetail(overlapException.getCode(), detail));
+        } else if (ex instanceof PlantationHasMandorException mandorException) {
+            String mandorName = mandorException.getMandorName();
+            String detail = mandorName == null || mandorName.isBlank()
+                    ? "plantation has a mandor assigned"
+                    : "plantation has mandor '" + mandorName + "' assigned";
+            details.add(new ApiErrorDetail(mandorException.getCode(), detail));
         } else {
             details.add(new ApiErrorDetail(ex.getCode(), ex.getMessage()));
         }
