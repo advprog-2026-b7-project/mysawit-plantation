@@ -49,6 +49,9 @@ public class Plantation {
     @Column(name = "mandor_name")
     private String mandorName;
 
+    @Column(name = "mandor_certification_number")
+    private String mandorCertificationNumber;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
@@ -151,6 +154,14 @@ public class Plantation {
 
     public void setMandorName(String mandorName) {
         this.mandorName = mandorName;
+    }
+
+    public String getMandorCertificationNumber() {
+        return mandorCertificationNumber;
+    }
+
+    public void setMandorCertificationNumber(String mandorCertificationNumber) {
+        this.mandorCertificationNumber = mandorCertificationNumber;
     }
 
     public Instant getCreatedAt() {

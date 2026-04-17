@@ -2,10 +2,12 @@ package id.ac.ui.cs.advprog.mysawit.plantation.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import id.ac.ui.cs.advprog.mysawit.plantation.dto.request.AssignMandorRequest;
 import id.ac.ui.cs.advprog.mysawit.plantation.dto.request.CreatePlantationRequest;
 import id.ac.ui.cs.advprog.mysawit.plantation.dto.request.UpdatePlantationRequest;
 import id.ac.ui.cs.advprog.mysawit.plantation.dto.response.ApiSuccessResponse;
 import id.ac.ui.cs.advprog.mysawit.plantation.dto.response.ApiSuccessMessageResponse;
+import id.ac.ui.cs.advprog.mysawit.plantation.dto.response.MandorAssignmentResponse;
 import id.ac.ui.cs.advprog.mysawit.plantation.dto.response.PlantationResponse;
 import id.ac.ui.cs.advprog.mysawit.plantation.dto.response.PlantationUpdateResponse;
 import id.ac.ui.cs.advprog.mysawit.plantation.exception.CodeUpdateForbiddenException;
@@ -79,5 +81,19 @@ public class PlantationController {
                         "Plantation " + plantationCode + " successfully deleted."
                 )
         );
+    }
+
+    @PostMapping("/{plantationId}/mandor")
+    public ResponseEntity<ApiSuccessResponse<MandorAssignmentResponse>> assignMandor(
+            @RequestHeader(value = "Authorization", required = false) String authorizationHeader,
+            @PathVariable UUID plantationId,
+            @Valid @RequestBody AssignMandorRequest request
+    ) {
+        MandorAssignmentResponse data = plantationService.assignMandor(
+                authorizationHeader,
+                plantationId,
+                request
+        );
+        return ResponseEntity.ok(new ApiSuccessResponse<>(data));
     }
 }
