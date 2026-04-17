@@ -1,0 +1,13 @@
+services:
+
+  mysawit-plantation:
+    build: .
+    container_name: mysawit-plantation
+
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://host.docker.internal:5435/mysawit_plantation
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+
+    ports:
+      - "8081:8081"
