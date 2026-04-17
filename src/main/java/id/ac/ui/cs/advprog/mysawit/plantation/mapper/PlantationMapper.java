@@ -2,11 +2,14 @@ package id.ac.ui.cs.advprog.mysawit.plantation.mapper;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import id.ac.ui.cs.advprog.mysawit.plantation.dto.response.DriverAssignmentResponse;
+import id.ac.ui.cs.advprog.mysawit.plantation.dto.response.DriverSummaryResponse;
 import id.ac.ui.cs.advprog.mysawit.plantation.dto.response.PlantationResponse;
 import id.ac.ui.cs.advprog.mysawit.plantation.dto.response.MandorAssignmentResponse;
 import id.ac.ui.cs.advprog.mysawit.plantation.dto.response.MandorSummaryResponse;
 import id.ac.ui.cs.advprog.mysawit.plantation.dto.response.PlantationUpdateResponse;
 import id.ac.ui.cs.advprog.mysawit.plantation.entity.Plantation;
+import id.ac.ui.cs.advprog.mysawit.plantation.entity.PlantationDriverAssignment;
 import id.ac.ui.cs.advprog.mysawit.plantation.exception.ValidationFailedException;
 import id.ac.ui.cs.advprog.mysawit.plantation.gateway.UserProfile;
 import java.util.List;
@@ -59,6 +62,21 @@ public class PlantationMapper {
         response.setPlantationId(plantation.getId().toString());
         response.setMandor(mandor);
         response.setAssignedAt(assignedAt);
+        return response;
+    }
+
+    public DriverAssignmentResponse toDriverAssignmentResponse(
+            PlantationDriverAssignment assignment,
+            UserProfile userProfile
+    ) {
+        DriverSummaryResponse driver = new DriverSummaryResponse();
+        driver.setId(userProfile.id().toString());
+        driver.setName(userProfile.name());
+
+        DriverAssignmentResponse response = new DriverAssignmentResponse();
+        response.setPlantationId(assignment.getPlantationId().toString());
+        response.setDriver(driver);
+        response.setAssignedAt(assignment.getAssignedAt());
         return response;
     }
 
