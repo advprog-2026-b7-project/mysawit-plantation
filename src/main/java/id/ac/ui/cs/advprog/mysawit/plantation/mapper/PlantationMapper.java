@@ -3,6 +3,7 @@ package id.ac.ui.cs.advprog.mysawit.plantation.mapper;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import id.ac.ui.cs.advprog.mysawit.plantation.dto.response.PlantationResponse;
+import id.ac.ui.cs.advprog.mysawit.plantation.dto.response.PlantationUpdateResponse;
 import id.ac.ui.cs.advprog.mysawit.plantation.entity.Plantation;
 import id.ac.ui.cs.advprog.mysawit.plantation.exception.ValidationFailedException;
 import java.util.List;
@@ -23,9 +24,20 @@ public class PlantationMapper {
         response.setName(plantation.getName());
         response.setCode(plantation.getCode());
         response.setArea(plantation.getArea());
-        response.setCoordinates(readCoordinates(plantation.getCoordinatesJson()));
+        response.setCoordinates(readCoordinatesJson(plantation.getCoordinatesJson()));
         response.setMandor(null);
         response.setCreatedAt(plantation.getCreatedAt());
+        return response;
+    }
+
+    public PlantationUpdateResponse toUpdateResponse(Plantation plantation) {
+        PlantationUpdateResponse response = new PlantationUpdateResponse();
+        response.setId(plantation.getId().toString());
+        response.setName(plantation.getName());
+        response.setCode(plantation.getCode());
+        response.setArea(plantation.getArea());
+        response.setCoordinates(readCoordinatesJson(plantation.getCoordinatesJson()));
+        response.setUpdatedAt(plantation.getUpdatedAt());
         return response;
     }
 
@@ -37,7 +49,7 @@ public class PlantationMapper {
         }
     }
 
-    private List<List<Integer>> readCoordinates(String coordinatesJson) {
+    public List<List<Integer>> readCoordinatesJson(String coordinatesJson) {
         try {
             return objectMapper.readValue(
                     coordinatesJson,
