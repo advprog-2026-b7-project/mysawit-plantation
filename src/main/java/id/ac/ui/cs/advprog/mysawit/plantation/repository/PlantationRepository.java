@@ -11,6 +11,12 @@ public interface PlantationRepository extends JpaRepository<Plantation, UUID> {
 
     boolean existsByCode(String code);
 
+        boolean existsByMandorId(UUID mandorId);
+
+        java.util.Optional<Plantation> findByMandorId(UUID mandorId);
+
+        java.util.Optional<Plantation> findByMandorIdAndIdNot(UUID mandorId, UUID plantationId);
+
     @Query(
             "SELECT p FROM Plantation p WHERE :minX < p.maxX AND :maxX > p.minX "
                     + "AND :minY < p.maxY AND :maxY > p.minY"
