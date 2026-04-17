@@ -1,23 +1,29 @@
 package id.ac.ui.cs.advprog.mysawit.plantation.service;
 
 import id.ac.ui.cs.advprog.mysawit.plantation.dto.request.CreatePlantationRequest;
+import id.ac.ui.cs.advprog.mysawit.plantation.dto.request.AssignDriverRequest;
 import id.ac.ui.cs.advprog.mysawit.plantation.dto.request.AssignMandorRequest;
+import id.ac.ui.cs.advprog.mysawit.plantation.dto.response.DriverAssignmentResponse;
 import id.ac.ui.cs.advprog.mysawit.plantation.dto.response.PlantationResponse;
 import id.ac.ui.cs.advprog.mysawit.plantation.dto.request.UpdatePlantationRequest;
 import id.ac.ui.cs.advprog.mysawit.plantation.dto.response.MandorAssignmentResponse;
 import id.ac.ui.cs.advprog.mysawit.plantation.dto.response.PlantationUpdateResponse;
+import id.ac.ui.cs.advprog.mysawit.plantation.entity.PlantationDriverAssignment;
 import id.ac.ui.cs.advprog.mysawit.plantation.entity.Plantation;
 import id.ac.ui.cs.advprog.mysawit.plantation.exception.CodeAlreadyExistsException;
+import id.ac.ui.cs.advprog.mysawit.plantation.exception.DriverAlreadyInPlantationException;
 import id.ac.ui.cs.advprog.mysawit.plantation.exception.MandorAlreadyAssignedException;
 import id.ac.ui.cs.advprog.mysawit.plantation.exception.MandorInOtherPlantationException;
 import id.ac.ui.cs.advprog.mysawit.plantation.exception.PlantationHasMandorException;
 import id.ac.ui.cs.advprog.mysawit.plantation.exception.PlantationNotFoundApiException;
+import id.ac.ui.cs.advprog.mysawit.plantation.exception.UserNotDriverException;
 import id.ac.ui.cs.advprog.mysawit.plantation.exception.ValidationFailedException;
 import id.ac.ui.cs.advprog.mysawit.plantation.exception.UserNotFoundException;
 import id.ac.ui.cs.advprog.mysawit.plantation.exception.UserNotMandorException;
 import id.ac.ui.cs.advprog.mysawit.plantation.mapper.PlantationMapper;
 import id.ac.ui.cs.advprog.mysawit.plantation.gateway.UserProfile;
 import id.ac.ui.cs.advprog.mysawit.plantation.gateway.UserProfileGateway;
+import id.ac.ui.cs.advprog.mysawit.plantation.repository.PlantationDriverAssignmentRepository;
 import id.ac.ui.cs.advprog.mysawit.plantation.repository.PlantationRepository;
 import id.ac.ui.cs.advprog.mysawit.plantation.security.JwtAdminGuard;
 import id.ac.ui.cs.advprog.mysawit.plantation.service.validation.CoordinateNormalizationService;
@@ -34,6 +40,7 @@ public class PlantationService {
     private final PlantationRepository plantationRepository;
     private final CoordinateNormalizationService coordinateNormalizationService;
     private final OverlapValidationService overlapValidationService;
+    private final PlantationDriverAssignmentRepository plantationDriverAssignmentRepository;
     private final JwtAdminGuard jwtAdminGuard;
     private final PlantationMapper plantationMapper;
     private final UserProfileGateway userProfileGateway;
@@ -42,6 +49,7 @@ public class PlantationService {
             PlantationRepository plantationRepository,
             CoordinateNormalizationService coordinateNormalizationService,
             OverlapValidationService overlapValidationService,
+            PlantationDriverAssignmentRepository plantationDriverAssignmentRepository,
             JwtAdminGuard jwtAdminGuard,
             PlantationMapper plantationMapper,
             UserProfileGateway userProfileGateway
@@ -49,6 +57,7 @@ public class PlantationService {
         this.plantationRepository = plantationRepository;
         this.coordinateNormalizationService = coordinateNormalizationService;
         this.overlapValidationService = overlapValidationService;
+        this.plantationDriverAssignmentRepository = plantationDriverAssignmentRepository;
         this.jwtAdminGuard = jwtAdminGuard;
         this.plantationMapper = plantationMapper;
         this.userProfileGateway = userProfileGateway;
@@ -185,5 +194,40 @@ public class PlantationService {
 
         Plantation saved = plantationRepository.save(plantation);
         return plantationMapper.toMandorAssignmentResponse(saved, userProfile, assignedAt);
+    }
+
+    @Transactional
+    public DriverAssignmentResponse assignDriver(
+            String authorizationHeader,
+            UUID plantationId,
+            AssignDriverRequest request
+    ) {
+        jwtAdminGuard.requireAdmin(authorizationHeader);
+
+        plantationRepository.findById(plantationId)
+                .orElseThrow(() -> new PlantationNotFoundApiException(plantationId));
+
+        UserProfile userProfile = userProfileGateway.findById(request.getDriverId())
+                .orElseThrow(() -> new UserNotFoundException(request.getDriverId()));
+
+        if (!"SUPIR".equalsIgnoreCase(userProfile.role())) {
+            throw new UserNotDriverException();
+        }
+
+        if (plantationDriverAssignmentRepository.existsByPlantationIdAndDriverId(
+                plantationId,
+                request.getDriverId()
+        )) {
+            throw new DriverAlreadyInPlantationException();
+        }
+
+        PlantationDriverAssignment assignment = new PlantationDriverAssignment();
+        assignment.setPlantationId(plantationId);
+        assignment.setDriverId(request.getDriverId());
+        assignment.setDriverName(userProfile.name());
+        assignment.setAssignedAt(Instant.now());
+
+        PlantationDriverAssignment saved = plantationDriverAssignmentRepository.save(assignment);
+        return plantationMapper.toDriverAssignmentResponse(saved, userProfile);
     }
 }
