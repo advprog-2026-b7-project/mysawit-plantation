@@ -8,4 +8,8 @@ public interface PlantationDriverAssignmentRepository
         extends JpaRepository<PlantationDriverAssignment, UUID> {
 
     boolean existsByPlantationIdAndDriverId(UUID plantationId, UUID driverId);
+
+    java.util.List<PlantationDriverAssignment> findByPlantationId(UUID plantationId);
+
+    java.util.Optional<PlantationDriverAssignment> findByPlantationIdAndDriverId(UUID plantationId, UUID driverId);
 }
