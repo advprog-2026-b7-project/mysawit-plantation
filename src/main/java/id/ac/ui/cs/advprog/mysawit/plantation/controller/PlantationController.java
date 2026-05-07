@@ -10,19 +10,23 @@ import id.ac.ui.cs.advprog.mysawit.plantation.dto.response.ApiSuccessResponse;
 import id.ac.ui.cs.advprog.mysawit.plantation.dto.response.ApiSuccessMessageResponse;
 import id.ac.ui.cs.advprog.mysawit.plantation.dto.response.DriverAssignmentResponse;
 import id.ac.ui.cs.advprog.mysawit.plantation.dto.response.MandorAssignmentResponse;
+import id.ac.ui.cs.advprog.mysawit.plantation.dto.response.PlantationDetailResponse;
 import id.ac.ui.cs.advprog.mysawit.plantation.dto.response.PlantationResponse;
 import id.ac.ui.cs.advprog.mysawit.plantation.dto.response.PlantationUpdateResponse;
 import id.ac.ui.cs.advprog.mysawit.plantation.exception.CodeUpdateForbiddenException;
 import id.ac.ui.cs.advprog.mysawit.plantation.service.PlantationService;
 import jakarta.validation.Valid;
+import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
@@ -38,6 +42,25 @@ public class PlantationController {
     public PlantationController(PlantationService plantationService, ObjectMapper objectMapper) {
         this.plantationService = plantationService;
         this.objectMapper = objectMapper;
+    }
+
+    @GetMapping
+    public ResponseEntity<ApiSuccessResponse<List<PlantationResponse>>> getAllPlantations(
+            @RequestHeader(value = "Authorization", required = false) String authorizationHeader,
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String code
+    ) {
+        List<PlantationResponse> data = plantationService.getAll(authorizationHeader, name, code);
+        return ResponseEntity.ok(new ApiSuccessResponse<>(data));
+    }
+
+    @GetMapping("/{plantationId}")
+    public ResponseEntity<ApiSuccessResponse<PlantationDetailResponse>> getPlantationById(
+            @RequestHeader(value = "Authorization", required = false) String authorizationHeader,
+            @PathVariable UUID plantationId
+    ) {
+        PlantationDetailResponse data = plantationService.getById(authorizationHeader, plantationId);
+        return ResponseEntity.ok(new ApiSuccessResponse<>(data));
     }
 
     @PostMapping
@@ -112,5 +135,24 @@ public class PlantationController {
                 request
         );
         return ResponseEntity.ok(new ApiSuccessResponse<>(data));
+    }
+
+    @DeleteMapping("/{plantationId}/mandor")
+    public ResponseEntity<ApiSuccessMessageResponse> unassignMandor(
+            @RequestHeader(value = "Authorization", required = false) String authorizationHeader,
+            @PathVariable UUID plantationId
+    ) {
+        plantationService.unassignMandor(authorizationHeader, plantationId);
+        return ResponseEntity.ok(new ApiSuccessMessageResponse("Mandor successfully unassigned."));
+    }
+
+    @DeleteMapping("/{plantationId}/drivers/{driverId}")
+    public ResponseEntity<ApiSuccessMessageResponse> unassignDriver(
+            @RequestHeader(value = "Authorization", required = false) String authorizationHeader,
+            @PathVariable UUID plantationId,
+            @PathVariable UUID driverId
+    ) {
+        plantationService.unassignDriver(authorizationHeader, plantationId, driverId);
+        return ResponseEntity.ok(new ApiSuccessMessageResponse("Driver successfully unassigned."));
     }
 }

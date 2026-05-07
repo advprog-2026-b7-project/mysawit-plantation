@@ -2,9 +2,11 @@ package id.ac.ui.cs.advprog.mysawit.plantation.gateway;
 
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 @Component
+@Profile("test")
 public class ConfiguredUserProfileGateway implements UserProfileGateway {
 
     private final PlantationUserDirectoryProperties properties;

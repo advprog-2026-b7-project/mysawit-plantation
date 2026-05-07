@@ -36,11 +36,20 @@ public class JwtAdminGuard {
         }
 
         try {
-            byte[] payloadBytes = Base64.getUrlDecoder().decode(parts[1]);
+            String padded = addBase64Padding(parts[1]);
+            byte[] payloadBytes = Base64.getUrlDecoder().decode(padded);
             return objectMapper.readTree(new String(payloadBytes, StandardCharsets.UTF_8));
         } catch (Exception ex) {
             throw new UnauthorizedException();
         }
+    }
+
+    private String addBase64Padding(String base64) {
+        int mod = base64.length() % 4;
+        if (mod == 0) {
+            return base64;
+        }
+        return base64 + "=".repeat(4 - mod);
     }
 
     private boolean containsAdminRole(JsonNode payload) {

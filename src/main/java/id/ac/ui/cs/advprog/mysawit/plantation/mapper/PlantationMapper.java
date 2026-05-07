@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import id.ac.ui.cs.advprog.mysawit.plantation.dto.response.DriverAssignmentResponse;
 import id.ac.ui.cs.advprog.mysawit.plantation.dto.response.DriverSummaryResponse;
+import id.ac.ui.cs.advprog.mysawit.plantation.dto.response.PlantationDetailResponse;
 import id.ac.ui.cs.advprog.mysawit.plantation.dto.response.PlantationResponse;
 import id.ac.ui.cs.advprog.mysawit.plantation.dto.response.MandorAssignmentResponse;
 import id.ac.ui.cs.advprog.mysawit.plantation.dto.response.MandorSummaryResponse;
@@ -77,6 +78,40 @@ public class PlantationMapper {
         response.setPlantationId(assignment.getPlantationId().toString());
         response.setDriver(driver);
         response.setAssignedAt(assignment.getAssignedAt());
+        return response;
+    }
+
+    public PlantationDetailResponse toDetailResponse(
+            Plantation plantation,
+            List<PlantationDriverAssignment> driverAssignments
+    ) {
+        PlantationDetailResponse response = new PlantationDetailResponse();
+        response.setId(plantation.getId().toString());
+        response.setName(plantation.getName());
+        response.setCode(plantation.getCode());
+        response.setArea(plantation.getArea());
+        response.setCoordinates(readCoordinatesJson(plantation.getCoordinatesJson()));
+        response.setCreatedAt(plantation.getCreatedAt());
+        response.setUpdatedAt(plantation.getUpdatedAt());
+
+        if (plantation.getMandorId() != null) {
+            MandorSummaryResponse mandor = new MandorSummaryResponse();
+            mandor.setId(plantation.getMandorId().toString());
+            mandor.setName(plantation.getMandorName());
+            mandor.setCertificationNumber(plantation.getMandorCertificationNumber());
+            response.setMandor(mandor);
+        }
+
+        List<DriverSummaryResponse> drivers = driverAssignments.stream()
+                .map(a -> {
+                    DriverSummaryResponse d = new DriverSummaryResponse();
+                    d.setId(a.getDriverId().toString());
+                    d.setName(a.getDriverName());
+                    return d;
+                })
+                .toList();
+        response.setDrivers(drivers);
+
         return response;
     }
 

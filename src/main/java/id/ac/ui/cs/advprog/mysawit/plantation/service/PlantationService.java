@@ -4,6 +4,7 @@ import id.ac.ui.cs.advprog.mysawit.plantation.dto.request.CreatePlantationReques
 import id.ac.ui.cs.advprog.mysawit.plantation.dto.request.AssignDriverRequest;
 import id.ac.ui.cs.advprog.mysawit.plantation.dto.request.AssignMandorRequest;
 import id.ac.ui.cs.advprog.mysawit.plantation.dto.response.DriverAssignmentResponse;
+import id.ac.ui.cs.advprog.mysawit.plantation.dto.response.PlantationDetailResponse;
 import id.ac.ui.cs.advprog.mysawit.plantation.dto.response.PlantationResponse;
 import id.ac.ui.cs.advprog.mysawit.plantation.dto.request.UpdatePlantationRequest;
 import id.ac.ui.cs.advprog.mysawit.plantation.dto.response.MandorAssignmentResponse;
@@ -12,6 +13,7 @@ import id.ac.ui.cs.advprog.mysawit.plantation.entity.PlantationDriverAssignment;
 import id.ac.ui.cs.advprog.mysawit.plantation.entity.Plantation;
 import id.ac.ui.cs.advprog.mysawit.plantation.exception.CodeAlreadyExistsException;
 import id.ac.ui.cs.advprog.mysawit.plantation.exception.DriverAlreadyInPlantationException;
+import id.ac.ui.cs.advprog.mysawit.plantation.exception.DriverNotInPlantationException;
 import id.ac.ui.cs.advprog.mysawit.plantation.exception.MandorAlreadyAssignedException;
 import id.ac.ui.cs.advprog.mysawit.plantation.exception.MandorInOtherPlantationException;
 import id.ac.ui.cs.advprog.mysawit.plantation.exception.PlantationHasMandorException;
@@ -30,6 +32,7 @@ import id.ac.ui.cs.advprog.mysawit.plantation.service.validation.CoordinateNorma
 import id.ac.ui.cs.advprog.mysawit.plantation.service.validation.NormalizedCoordinates;
 import id.ac.ui.cs.advprog.mysawit.plantation.service.validation.OverlapValidationService;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -229,5 +232,47 @@ public class PlantationService {
 
         PlantationDriverAssignment saved = plantationDriverAssignmentRepository.save(assignment);
         return plantationMapper.toDriverAssignmentResponse(saved, userProfile);
+    }
+
+    public List<PlantationResponse> getAll(String authorizationHeader, String name, String code) {
+        jwtAdminGuard.requireAdmin(authorizationHeader);
+        String nameFilter = (name == null || name.isBlank()) ? "" : name.trim();
+        String codeFilter = (code == null || code.isBlank()) ? "" : code.trim();
+        return plantationRepository.findByFilters(nameFilter, codeFilter).stream()
+                .map(plantationMapper::toResponse)
+                .toList();
+    }
+
+    public PlantationDetailResponse getById(String authorizationHeader, UUID plantationId) {
+        jwtAdminGuard.requireAdmin(authorizationHeader);
+        Plantation plantation = plantationRepository.findById(plantationId)
+                .orElseThrow(() -> new PlantationNotFoundApiException(plantationId));
+        List<PlantationDriverAssignment> drivers =
+                plantationDriverAssignmentRepository.findByPlantationId(plantationId);
+        return plantationMapper.toDetailResponse(plantation, drivers);
+    }
+
+    @Transactional
+    public void unassignMandor(String authorizationHeader, UUID plantationId) {
+        jwtAdminGuard.requireAdmin(authorizationHeader);
+        Plantation plantation = plantationRepository.findById(plantationId)
+                .orElseThrow(() -> new PlantationNotFoundApiException(plantationId));
+        plantation.setMandorId(null);
+        plantation.setMandorName(null);
+        plantation.setMandorCertificationNumber(null);
+        plantation.setUpdatedAt(Instant.now());
+        plantationRepository.save(plantation);
+    }
+
+    @Transactional
+    public void unassignDriver(String authorizationHeader, UUID plantationId, UUID driverId) {
+        jwtAdminGuard.requireAdmin(authorizationHeader);
+        plantationRepository.findById(plantationId)
+                .orElseThrow(() -> new PlantationNotFoundApiException(plantationId));
+        PlantationDriverAssignment assignment =
+                plantationDriverAssignmentRepository
+                        .findByPlantationIdAndDriverId(plantationId, driverId)
+                        .orElseThrow(DriverNotInPlantationException::new);
+        plantationDriverAssignmentRepository.delete(assignment);
     }
 }
