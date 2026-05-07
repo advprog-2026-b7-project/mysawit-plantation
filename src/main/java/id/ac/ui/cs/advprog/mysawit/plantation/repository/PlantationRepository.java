@@ -18,8 +18,8 @@ public interface PlantationRepository extends JpaRepository<Plantation, UUID> {
     java.util.Optional<Plantation> findByMandorIdAndIdNot(UUID mandorId, UUID plantationId);
 
     @Query("SELECT p FROM Plantation p WHERE "
-            + "(:name IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :name, '%'))) "
-            + "AND (:code IS NULL OR LOWER(p.code) LIKE LOWER(CONCAT('%', :code, '%')))")
+            + "(:name = '' OR LOWER(p.name) LIKE LOWER(CONCAT('%', :name, '%'))) "
+            + "AND (:code = '' OR LOWER(p.code) LIKE LOWER(CONCAT('%', :code, '%')))")
     List<Plantation> findByFilters(
             @Param("name") String name,
             @Param("code") String code

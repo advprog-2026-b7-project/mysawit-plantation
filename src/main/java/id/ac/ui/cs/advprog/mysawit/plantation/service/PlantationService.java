@@ -236,7 +236,9 @@ public class PlantationService {
 
     public List<PlantationResponse> getAll(String authorizationHeader, String name, String code) {
         jwtAdminGuard.requireAdmin(authorizationHeader);
-        return plantationRepository.findByFilters(name, code).stream()
+        String nameFilter = (name == null || name.isBlank()) ? "" : name.trim();
+        String codeFilter = (code == null || code.isBlank()) ? "" : code.trim();
+        return plantationRepository.findByFilters(nameFilter, codeFilter).stream()
                 .map(plantationMapper::toResponse)
                 .toList();
     }
