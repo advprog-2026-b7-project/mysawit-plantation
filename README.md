@@ -47,3 +47,11 @@ Entity `plantations` pada service ini sudah disejajarkan dengan skema tim:
 - `updated_at`
 
 Fitur update plantation juga sudah menerapkan rule bahwa `code` tidak boleh diubah.
+
+### Component Diagram
+
+![Component Diagram](images/component-diagram.png)
+
+### Code Diagram (Entities)
+
+![Component Diagram](images/entities-diagram.png)
