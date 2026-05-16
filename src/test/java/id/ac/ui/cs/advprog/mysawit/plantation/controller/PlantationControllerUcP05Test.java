@@ -9,9 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import id.ac.ui.cs.advprog.mysawit.plantation.entity.Plantation;
 import id.ac.ui.cs.advprog.mysawit.plantation.repository.PlantationDriverAssignmentRepository;
 import id.ac.ui.cs.advprog.mysawit.plantation.repository.PlantationRepository;
-import java.nio.charset.StandardCharsets;
-import java.util.Base64;
-import java.util.Map;
+import id.ac.ui.cs.advprog.mysawit.plantation.security.JwtTestHelper;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -170,25 +168,11 @@ class PlantationControllerUcP05Test {
         return json.get("data").get("id").asText();
     }
 
-    private String adminToken() throws Exception {
-        return bearerWithPayload(
-                Map.of("role", "ADMIN", "sub", "11111111-1111-1111-1111-111111111111")
-        );
+    private String adminToken() {
+        return JwtTestHelper.adminBearer();
     }
 
-    private String userToken() throws Exception {
-        return bearerWithPayload(
-                Map.of("role", "MANDOR", "sub", "22222222-2222-2222-2222-222222222222")
-        );
-    }
-
-    private String bearerWithPayload(Map<String, Object> payload) throws Exception {
-        String headerJson = objectMapper.writeValueAsString(Map.of("alg", "none", "typ", "JWT"));
-        String payloadJson = objectMapper.writeValueAsString(payload);
-        String encodedHeader = Base64.getUrlEncoder().withoutPadding()
-                .encodeToString(headerJson.getBytes(StandardCharsets.UTF_8));
-        String encodedPayload = Base64.getUrlEncoder().withoutPadding()
-                .encodeToString(payloadJson.getBytes(StandardCharsets.UTF_8));
-        return "Bearer " + encodedHeader + "." + encodedPayload + ".signature";
+    private String userToken() {
+        return JwtTestHelper.userBearer("MANDOR");
     }
 }

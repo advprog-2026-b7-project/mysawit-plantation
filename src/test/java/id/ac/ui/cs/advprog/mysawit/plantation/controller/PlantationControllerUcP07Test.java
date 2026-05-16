@@ -1,9 +1,9 @@
 package id.ac.ui.cs.advprog.mysawit.plantation.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import id.ac.ui.cs.advprog.mysawit.plantation.entity.Plantation;
 import id.ac.ui.cs.advprog.mysawit.plantation.repository.PlantationDriverAssignmentRepository;
 import id.ac.ui.cs.advprog.mysawit.plantation.repository.PlantationRepository;
+import id.ac.ui.cs.advprog.mysawit.plantation.security.JwtTestHelper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,10 +11,6 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
-
-import java.nio.charset.StandardCharsets;
-import java.util.Base64;
-import java.util.Map;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -27,7 +23,6 @@ import static org.hamcrest.Matchers.hasSize;
 class PlantationControllerUcP07Test {
 
     @Autowired private MockMvc mockMvc;
-    @Autowired private ObjectMapper objectMapper;
     @Autowired private PlantationRepository plantationRepository;
     @Autowired private PlantationDriverAssignmentRepository driverAssignmentRepository;
 
@@ -98,23 +93,11 @@ class PlantationControllerUcP07Test {
                 .andExpect(status().isForbidden());
     }
 
-    private String adminToken() throws Exception {
-        return bearerWithPayload(
-                Map.of("role", "ADMIN", "sub", "11111111-1111-1111-1111-111111111111"));
+    private String adminToken() {
+        return JwtTestHelper.adminBearer();
     }
 
-    private String userToken() throws Exception {
-        return bearerWithPayload(
-                Map.of("role", "BURUH", "sub", "22222222-2222-2222-2222-222222222222"));
-    }
-
-    private String bearerWithPayload(Map<String, Object> payload) throws Exception {
-        String headerJson = objectMapper.writeValueAsString(Map.of("alg", "none", "typ", "JWT"));
-        String payloadJson = objectMapper.writeValueAsString(payload);
-        String encodedHeader = Base64.getUrlEncoder().withoutPadding()
-                .encodeToString(headerJson.getBytes(StandardCharsets.UTF_8));
-        String encodedPayload = Base64.getUrlEncoder().withoutPadding()
-                .encodeToString(payloadJson.getBytes(StandardCharsets.UTF_8));
-        return "Bearer " + encodedHeader + "." + encodedPayload + ".signature";
+    private String userToken() {
+        return JwtTestHelper.userBearer("BURUH");
     }
 }
