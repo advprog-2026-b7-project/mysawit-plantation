@@ -89,11 +89,13 @@ class PlantationControllerUcP06Test {
     }
 
     private String adminToken() throws Exception {
-        return bearerWithPayload(Map.of("role", "ADMIN", "sub", "11111111-1111-1111-1111-111111111111"));
+        return bearerWithPayload(
+                Map.of("role", "ADMIN", "sub", "11111111-1111-1111-1111-111111111111"));
     }
 
     private String userToken() throws Exception {
-        return bearerWithPayload(Map.of("role", "BURUH", "sub", "22222222-2222-2222-2222-222222222222"));
+        return bearerWithPayload(
+                Map.of("role", "BURUH", "sub", "22222222-2222-2222-2222-222222222222"));
     }
 
     private String bearerWithPayload(Map<String, Object> payload) throws Exception {

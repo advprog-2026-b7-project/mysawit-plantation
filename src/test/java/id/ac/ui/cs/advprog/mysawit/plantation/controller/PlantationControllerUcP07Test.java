@@ -45,7 +45,8 @@ class PlantationControllerUcP07Test {
         Plantation p = new Plantation();
         p.setName(name); p.setCode(code); p.setArea(50.0);
         p.setMinX(x1); p.setMinY(y1); p.setMaxX(x2); p.setMaxY(y2);
-        p.setCoordinatesJson("[[" + x1 + "," + y1 + "],[" + x2 + "," + y1 + "],[" + x2 + "," + y2 + "],[" + x1 + "," + y2 + "]]");
+        p.setCoordinatesJson("[[" + x1 + "," + y1 + "],[" + x2 + "," + y1
+                + "],[" + x2 + "," + y2 + "],[" + x1 + "," + y2 + "]]");
         return p;
     }
 
@@ -98,11 +99,13 @@ class PlantationControllerUcP07Test {
     }
 
     private String adminToken() throws Exception {
-        return bearerWithPayload(Map.of("role", "ADMIN", "sub", "11111111-1111-1111-1111-111111111111"));
+        return bearerWithPayload(
+                Map.of("role", "ADMIN", "sub", "11111111-1111-1111-1111-111111111111"));
     }
 
     private String userToken() throws Exception {
-        return bearerWithPayload(Map.of("role", "BURUH", "sub", "22222222-2222-2222-2222-222222222222"));
+        return bearerWithPayload(
+                Map.of("role", "BURUH", "sub", "22222222-2222-2222-2222-222222222222"));
     }
 
     private String bearerWithPayload(Map<String, Object> payload) throws Exception {

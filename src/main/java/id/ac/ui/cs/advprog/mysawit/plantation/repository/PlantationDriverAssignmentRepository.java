@@ -11,5 +11,6 @@ public interface PlantationDriverAssignmentRepository
 
     java.util.List<PlantationDriverAssignment> findByPlantationId(UUID plantationId);
 
-    java.util.Optional<PlantationDriverAssignment> findByPlantationIdAndDriverId(UUID plantationId, UUID driverId);
+    java.util.Optional<PlantationDriverAssignment> findByPlantationIdAndDriverId(
+            UUID plantationId, UUID driverId);
 }

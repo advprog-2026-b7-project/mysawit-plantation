@@ -59,7 +59,8 @@ public class PlantationController {
             @RequestHeader(value = "Authorization", required = false) String authorizationHeader,
             @PathVariable UUID plantationId
     ) {
-        PlantationDetailResponse data = plantationService.getById(authorizationHeader, plantationId);
+        PlantationDetailResponse data =
+                plantationService.getById(authorizationHeader, plantationId);
         return ResponseEntity.ok(new ApiSuccessResponse<>(data));
     }
 
