@@ -39,4 +39,4 @@ out/
 /build
 /.gradle
 *.log
-.env
+.env.DS_Store
