@@ -4,6 +4,7 @@ public class MandorSummaryResponse {
 
     private String id;
     private String name;
+    private String email;
     private String certificationNumber;
 
     public String getId() {
@@ -20,6 +21,14 @@ public class MandorSummaryResponse {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
     }
 
     public String getCertificationNumber() {

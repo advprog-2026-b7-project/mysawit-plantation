@@ -37,6 +37,7 @@ public class AuthServiceUserProfileGateway implements UserProfileGateway {
             return Optional.of(new UserProfile(
                     UUID.fromString(body.id()),
                     body.username(),
+                    body.email(),
                     body.role(),
                     body.mandorCertificationNumber()
             ));

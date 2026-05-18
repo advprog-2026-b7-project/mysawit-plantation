@@ -3,16 +3,19 @@ package id.ac.ui.cs.advprog.mysawit.plantation.service;
 import id.ac.ui.cs.advprog.mysawit.plantation.dto.request.AssignDriverRequest;
 import id.ac.ui.cs.advprog.mysawit.plantation.dto.request.AssignMandorRequest;
 import id.ac.ui.cs.advprog.mysawit.plantation.dto.request.CreatePlantationRequest;
+import id.ac.ui.cs.advprog.mysawit.plantation.dto.request.ReassignPlantationRequest;
 import id.ac.ui.cs.advprog.mysawit.plantation.dto.request.UpdatePlantationRequest;
 import id.ac.ui.cs.advprog.mysawit.plantation.dto.response.DriverAssignmentResponse;
 import id.ac.ui.cs.advprog.mysawit.plantation.dto.response.MandorAssignmentResponse;
+import id.ac.ui.cs.advprog.mysawit.plantation.dto.response.PageResponse;
 import id.ac.ui.cs.advprog.mysawit.plantation.dto.response.PlantationDetailResponse;
+import id.ac.ui.cs.advprog.mysawit.plantation.dto.response.PlantationListItemResponse;
 import id.ac.ui.cs.advprog.mysawit.plantation.dto.response.PlantationResponse;
 import id.ac.ui.cs.advprog.mysawit.plantation.dto.response.PlantationUpdateResponse;
 import id.ac.ui.cs.advprog.mysawit.plantation.security.JwtAdminGuard;
-import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -56,9 +59,13 @@ public class PlantationService {
         return mandorAssignmentService.assign(plantationId, request);
     }
 
-    public void unassignMandor(String authorizationHeader, UUID plantationId) {
+    public MandorAssignmentResponse unassignMandor(
+            String authorizationHeader,
+            UUID plantationId,
+            ReassignPlantationRequest request
+    ) {
         jwtAdminGuard.requireAdmin(authorizationHeader);
-        mandorAssignmentService.unassign(plantationId);
+        return mandorAssignmentService.unassign(plantationId, request);
     }
 
     public DriverAssignmentResponse assignDriver(
@@ -70,26 +77,33 @@ public class PlantationService {
         return driverAssignmentService.assign(plantationId, request);
     }
 
-    public void unassignDriver(
+    public DriverAssignmentResponse unassignDriver(
             String authorizationHeader,
             UUID plantationId,
-            UUID driverId
+            UUID driverId,
+            ReassignPlantationRequest request
     ) {
         jwtAdminGuard.requireAdmin(authorizationHeader);
-        driverAssignmentService.unassign(plantationId, driverId);
+        return driverAssignmentService.unassign(plantationId, driverId, request);
     }
 
-    public List<PlantationResponse> getAll(
+    public PageResponse<PlantationListItemResponse> getAll(
             String authorizationHeader,
             String name,
-            String code
+            String code,
+            Pageable pageable
     ) {
         jwtAdminGuard.requireAdmin(authorizationHeader);
-        return queryService.getAll(name, code);
+        return queryService.getAll(name, code, pageable);
     }
 
-    public PlantationDetailResponse getById(String authorizationHeader, UUID plantationId) {
+    public PlantationDetailResponse getById(
+            String authorizationHeader,
+            UUID plantationId,
+            String driverName,
+            Pageable driverPageable
+    ) {
         jwtAdminGuard.requireAdmin(authorizationHeader);
-        return queryService.getById(plantationId);
+        return queryService.getById(plantationId, driverName, driverPageable);
     }
 }

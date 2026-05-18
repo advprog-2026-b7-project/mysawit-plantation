@@ -4,7 +4,9 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import id.ac.ui.cs.advprog.mysawit.plantation.dto.response.DriverAssignmentResponse;
 import id.ac.ui.cs.advprog.mysawit.plantation.dto.response.DriverSummaryResponse;
+import id.ac.ui.cs.advprog.mysawit.plantation.dto.response.PageResponse;
 import id.ac.ui.cs.advprog.mysawit.plantation.dto.response.PlantationDetailResponse;
+import id.ac.ui.cs.advprog.mysawit.plantation.dto.response.PlantationListItemResponse;
 import id.ac.ui.cs.advprog.mysawit.plantation.dto.response.PlantationResponse;
 import id.ac.ui.cs.advprog.mysawit.plantation.dto.response.MandorAssignmentResponse;
 import id.ac.ui.cs.advprog.mysawit.plantation.dto.response.MandorSummaryResponse;
@@ -15,6 +17,7 @@ import id.ac.ui.cs.advprog.mysawit.plantation.exception.ValidationFailedExceptio
 import id.ac.ui.cs.advprog.mysawit.plantation.gateway.UserProfile;
 import java.util.List;
 import java.time.Instant;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -38,6 +41,21 @@ public class PlantationMapper {
         return response;
     }
 
+    public PlantationListItemResponse toListItemResponse(
+            Plantation plantation,
+            long driverCount
+    ) {
+        PlantationListItemResponse response = new PlantationListItemResponse();
+        response.setId(plantation.getId().toString());
+        response.setName(plantation.getName());
+        response.setCode(plantation.getCode());
+        response.setArea(plantation.getArea());
+        response.setMandorName(plantation.getMandorName());
+        response.setDriverCount(driverCount);
+        response.setCreatedAt(plantation.getCreatedAt());
+        return response;
+    }
+
     public PlantationUpdateResponse toUpdateResponse(Plantation plantation) {
         PlantationUpdateResponse response = new PlantationUpdateResponse();
         response.setId(plantation.getId().toString());
@@ -57,6 +75,7 @@ public class PlantationMapper {
         MandorSummaryResponse mandor = new MandorSummaryResponse();
         mandor.setId(userProfile.id().toString());
         mandor.setName(userProfile.name());
+        mandor.setEmail(userProfile.email());
         mandor.setCertificationNumber(userProfile.certificationNumber());
 
         MandorAssignmentResponse response = new MandorAssignmentResponse();
@@ -73,6 +92,7 @@ public class PlantationMapper {
         DriverSummaryResponse driver = new DriverSummaryResponse();
         driver.setId(userProfile.id().toString());
         driver.setName(userProfile.name());
+        driver.setEmail(userProfile.email());
 
         DriverAssignmentResponse response = new DriverAssignmentResponse();
         response.setPlantationId(assignment.getPlantationId().toString());
@@ -83,7 +103,7 @@ public class PlantationMapper {
 
     public PlantationDetailResponse toDetailResponse(
             Plantation plantation,
-            List<PlantationDriverAssignment> driverAssignments
+            Page<PlantationDriverAssignment> driverAssignments
     ) {
         PlantationDetailResponse response = new PlantationDetailResponse();
         response.setId(plantation.getId().toString());
@@ -98,21 +118,45 @@ public class PlantationMapper {
             MandorSummaryResponse mandor = new MandorSummaryResponse();
             mandor.setId(plantation.getMandorId().toString());
             mandor.setName(plantation.getMandorName());
+            mandor.setEmail(plantation.getMandorEmail());
             mandor.setCertificationNumber(plantation.getMandorCertificationNumber());
             response.setMandor(mandor);
         }
 
-        List<DriverSummaryResponse> drivers = driverAssignments.stream()
+        Page<DriverSummaryResponse> drivers = driverAssignments.map(a -> {
+            DriverSummaryResponse d = new DriverSummaryResponse();
+            d.setId(a.getDriverId().toString());
+            d.setName(a.getDriverName());
+            d.setEmail(a.getDriverEmail());
+            return d;
+        });
+        response.setDrivers(PageResponse.from(drivers));
+
+        return response;
+    }
+
+    public PageResponse<PlantationListItemResponse> toListPageResponse(
+            Page<Plantation> plantations,
+            java.util.function.Function<Plantation, Long> driverCounter
+    ) {
+        Page<PlantationListItemResponse> mapped = plantations.map(
+                plantation -> toListItemResponse(plantation, driverCounter.apply(plantation))
+        );
+        return PageResponse.from(mapped);
+    }
+
+    public List<DriverSummaryResponse> toDriverSummaries(
+            List<PlantationDriverAssignment> driverAssignments
+    ) {
+        return driverAssignments.stream()
                 .map(a -> {
                     DriverSummaryResponse d = new DriverSummaryResponse();
                     d.setId(a.getDriverId().toString());
                     d.setName(a.getDriverName());
+                    d.setEmail(a.getDriverEmail());
                     return d;
                 })
                 .toList();
-        response.setDrivers(drivers);
-
-        return response;
     }
 
     public String toCoordinatesJson(List<List<Integer>> points) {

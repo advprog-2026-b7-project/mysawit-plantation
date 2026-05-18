@@ -49,6 +49,9 @@ public class Plantation {
     @Column(name = "mandor_name")
     private String mandorName;
 
+    @Column(name = "mandor_email")
+    private String mandorEmail;
+
     @Column(name = "mandor_certification_number")
     private String mandorCertificationNumber;
 
@@ -154,6 +157,14 @@ public class Plantation {
 
     public void setMandorName(String mandorName) {
         this.mandorName = mandorName;
+    }
+
+    public String getMandorEmail() {
+        return mandorEmail;
+    }
+
+    public void setMandorEmail(String mandorEmail) {
+        this.mandorEmail = mandorEmail;
     }
 
     public String getMandorCertificationNumber() {

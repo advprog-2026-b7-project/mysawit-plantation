@@ -23,6 +23,7 @@ public class PlantationUserDirectoryProperties {
     public static class UserSeed {
         private UUID id;
         private String name;
+        private String email;
         private String role;
         private String certificationNumber;
 
@@ -40,6 +41,14 @@ public class PlantationUserDirectoryProperties {
 
         public void setName(String name) {
             this.name = name;
+        }
+
+        public String getEmail() {
+            return email;
+        }
+
+        public void setEmail(String email) {
+            this.email = email;
         }
 
         public String getRole() {

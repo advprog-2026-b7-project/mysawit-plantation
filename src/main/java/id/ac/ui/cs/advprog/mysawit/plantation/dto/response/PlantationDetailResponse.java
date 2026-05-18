@@ -11,7 +11,7 @@ public class PlantationDetailResponse {
     private Double area;
     private List<List<Integer>> coordinates;
     private MandorSummaryResponse mandor;
-    private List<DriverSummaryResponse> drivers;
+    private PageResponse<DriverSummaryResponse> drivers;
     private Instant createdAt;
     private Instant updatedAt;
 
@@ -33,8 +33,8 @@ public class PlantationDetailResponse {
     public MandorSummaryResponse getMandor() { return mandor; }
     public void setMandor(MandorSummaryResponse mandor) { this.mandor = mandor; }
 
-    public List<DriverSummaryResponse> getDrivers() { return drivers; }
-    public void setDrivers(List<DriverSummaryResponse> drivers) { this.drivers = drivers; }
+    public PageResponse<DriverSummaryResponse> getDrivers() { return drivers; }
+    public void setDrivers(PageResponse<DriverSummaryResponse> drivers) { this.drivers = drivers; }
 
     public Instant getCreatedAt() { return createdAt; }
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }

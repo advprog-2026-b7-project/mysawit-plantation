@@ -27,6 +27,9 @@ public class PlantationDriverAssignment {
     @Column(name = "driver_name", nullable = false)
     private String driverName;
 
+    @Column(name = "driver_email")
+    private String driverEmail;
+
     @Column(name = "assigned_at", nullable = false)
     private Instant assignedAt;
 
@@ -67,6 +70,14 @@ public class PlantationDriverAssignment {
 
     public void setDriverName(String driverName) {
         this.driverName = driverName;
+    }
+
+    public String getDriverEmail() {
+        return driverEmail;
+    }
+
+    public void setDriverEmail(String driverEmail) {
+        this.driverEmail = driverEmail;
     }
 
     public Instant getAssignedAt() {

@@ -23,6 +23,7 @@ public class ConfiguredUserProfileGateway implements UserProfileGateway {
                 .map(userSeed -> new UserProfile(
                         userSeed.getId(),
                         userSeed.getName(),
+                        userSeed.getEmail(),
                         userSeed.getRole(),
                         userSeed.getCertificationNumber()
                 ));

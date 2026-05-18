@@ -1,11 +1,13 @@
 package id.ac.ui.cs.advprog.mysawit.plantation.service;
 
 import id.ac.ui.cs.advprog.mysawit.plantation.dto.request.AssignDriverRequest;
+import id.ac.ui.cs.advprog.mysawit.plantation.dto.request.ReassignPlantationRequest;
 import id.ac.ui.cs.advprog.mysawit.plantation.dto.response.DriverAssignmentResponse;
 import id.ac.ui.cs.advprog.mysawit.plantation.entity.PlantationDriverAssignment;
 import id.ac.ui.cs.advprog.mysawit.plantation.exception.DriverAlreadyInPlantationException;
 import id.ac.ui.cs.advprog.mysawit.plantation.exception.DriverNotInPlantationException;
 import id.ac.ui.cs.advprog.mysawit.plantation.exception.PlantationNotFoundApiException;
+import id.ac.ui.cs.advprog.mysawit.plantation.exception.ReassignPlantationRequiredException;
 import id.ac.ui.cs.advprog.mysawit.plantation.exception.UserNotFoundException;
 import id.ac.ui.cs.advprog.mysawit.plantation.exception.UserNotDriverException;
 import id.ac.ui.cs.advprog.mysawit.plantation.gateway.UserProfile;
@@ -48,6 +50,7 @@ public class DriverAssignmentServiceImpl implements DriverAssignmentService {
         assignment.setPlantationId(plantationId);
         assignment.setDriverId(request.getDriverId());
         assignment.setDriverName(userProfile.name());
+        assignment.setDriverEmail(userProfile.email());
         assignment.setAssignedAt(Instant.now());
         PlantationDriverAssignment saved =
                 plantationDriverAssignmentRepository.save(assignment);
@@ -56,13 +59,50 @@ public class DriverAssignmentServiceImpl implements DriverAssignmentService {
 
     @Override
     @Transactional
-    public void unassign(UUID plantationId, UUID driverId) {
+    public DriverAssignmentResponse unassign(
+            UUID plantationId,
+            UUID driverId,
+            ReassignPlantationRequest request
+    ) {
         plantationRepository.findById(plantationId)
                 .orElseThrow(() -> new PlantationNotFoundApiException(plantationId));
         PlantationDriverAssignment assignment =
                 plantationDriverAssignmentRepository
                         .findByPlantationIdAndDriverId(plantationId, driverId)
                         .orElseThrow(DriverNotInPlantationException::new);
-        plantationDriverAssignmentRepository.delete(assignment);
+        UUID targetPlantationId = requireTargetPlantationId(plantationId, request);
+        plantationRepository.findById(targetPlantationId)
+                .orElseThrow(() -> new PlantationNotFoundApiException(targetPlantationId));
+        if (plantationDriverAssignmentRepository.existsByPlantationIdAndDriverId(
+                targetPlantationId,
+                driverId
+        )) {
+            throw new DriverAlreadyInPlantationException();
+        }
+
+        Instant assignedAt = Instant.now();
+        assignment.setPlantationId(targetPlantationId);
+        assignment.setAssignedAt(assignedAt);
+        PlantationDriverAssignment saved =
+                plantationDriverAssignmentRepository.save(assignment);
+        UserProfile reassignedDriver = new UserProfile(
+                saved.getDriverId(),
+                saved.getDriverName(),
+                saved.getDriverEmail(),
+                "SUPIR",
+                null
+        );
+        return plantationMapper.toDriverAssignmentResponse(saved, reassignedDriver);
+    }
+
+    private UUID requireTargetPlantationId(
+            UUID sourcePlantationId,
+            ReassignPlantationRequest request
+    ) {
+        if (request == null || request.getReassignToPlantationId() == null
+                || sourcePlantationId.equals(request.getReassignToPlantationId())) {
+            throw new ReassignPlantationRequiredException();
+        }
+        return request.getReassignToPlantationId();
     }
 }
