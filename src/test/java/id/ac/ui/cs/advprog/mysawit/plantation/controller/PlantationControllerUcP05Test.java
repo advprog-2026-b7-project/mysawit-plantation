@@ -1,5 +1,7 @@
 package id.ac.ui.cs.advprog.mysawit.plantation.controller;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -7,6 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import id.ac.ui.cs.advprog.mysawit.plantation.entity.Plantation;
+import id.ac.ui.cs.advprog.mysawit.plantation.entity.PlantationDriverAssignment;
 import id.ac.ui.cs.advprog.mysawit.plantation.repository.PlantationDriverAssignmentRepository;
 import id.ac.ui.cs.advprog.mysawit.plantation.repository.PlantationRepository;
 import id.ac.ui.cs.advprog.mysawit.plantation.security.JwtTestHelper;
@@ -134,6 +137,100 @@ class PlantationControllerUcP05Test {
                 .andExpect(jsonPath("$.errors[0].code").value("FORBIDDEN"));
     }
 
+    @Test
+    void unassignDriverReassignsToTargetPlantation() throws Exception {
+        Plantation source = plantationRepository.save(
+                createPlantationEntity("Kebun Source", "KBN-506")
+        );
+        Plantation target = plantationRepository.save(
+                createPlantationEntity("Kebun Target", "KBN-507")
+        );
+        plantationDriverAssignmentRepository.save(makeDriverAssignment(source.getId()));
+
+        mockMvc.perform(delete(
+                        "/api/v1/plantations/{plantationId}/drivers/{driverId}",
+                        source.getId(),
+                        DRIVER_ID
+                )
+                        .header("Authorization", adminToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(reassignBody(target.getId())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("success"))
+                .andExpect(jsonPath("$.data.plantationId").value(target.getId().toString()))
+                .andExpect(jsonPath("$.data.driver.id").value(DRIVER_ID.toString()));
+
+        assertTrue(plantationDriverAssignmentRepository
+                .findByPlantationIdAndDriverId(source.getId(), DRIVER_ID)
+                .isEmpty());
+        assertTrue(plantationDriverAssignmentRepository
+                .findByPlantationIdAndDriverId(target.getId(), DRIVER_ID)
+                .isPresent());
+    }
+
+    @Test
+    void unassignDriverRequiresReassignTarget() throws Exception {
+        Plantation source = plantationRepository.save(
+                createPlantationEntity("Kebun Source", "KBN-508")
+        );
+        plantationDriverAssignmentRepository.save(makeDriverAssignment(source.getId()));
+
+        mockMvc.perform(delete(
+                        "/api/v1/plantations/{plantationId}/drivers/{driverId}",
+                        source.getId(),
+                        DRIVER_ID
+                )
+                        .header("Authorization", adminToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors[0].code")
+                        .value("REASSIGN_PLANTATION_REQUIRED"));
+    }
+
+    @Test
+    void unassignDriverTargetNotFound() throws Exception {
+        Plantation source = plantationRepository.save(
+                createPlantationEntity("Kebun Source", "KBN-509")
+        );
+        plantationDriverAssignmentRepository.save(makeDriverAssignment(source.getId()));
+
+        mockMvc.perform(delete(
+                        "/api/v1/plantations/{plantationId}/drivers/{driverId}",
+                        source.getId(),
+                        DRIVER_ID
+                )
+                        .header("Authorization", adminToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(reassignBody(UUID.randomUUID())))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.errors[0].code").value("PLANTATION_NOT_FOUND"));
+    }
+
+    @Test
+    void unassignDriverRejectedWhenDuplicateInTarget() throws Exception {
+        Plantation source = plantationRepository.save(
+                createPlantationEntity("Kebun Source", "KBN-510")
+        );
+        Plantation target = plantationRepository.save(
+                createPlantationEntity("Kebun Target", "KBN-511")
+        );
+        plantationDriverAssignmentRepository.save(makeDriverAssignment(source.getId()));
+        plantationDriverAssignmentRepository.save(makeDriverAssignment(target.getId()));
+
+        mockMvc.perform(delete(
+                        "/api/v1/plantations/{plantationId}/drivers/{driverId}",
+                        source.getId(),
+                        DRIVER_ID
+                )
+                        .header("Authorization", adminToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(reassignBody(target.getId())))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.errors[0].code")
+                        .value("DRIVER_ALREADY_IN_PLANTATION"));
+    }
+
     private Plantation createPlantationEntity(String name, String code) {
         Plantation plantation = new Plantation();
         plantation.setName(name);
@@ -174,5 +271,18 @@ class PlantationControllerUcP05Test {
 
     private String userToken() {
         return JwtTestHelper.userBearer("MANDOR");
+    }
+
+    private PlantationDriverAssignment makeDriverAssignment(UUID plantationId) {
+        PlantationDriverAssignment assignment = new PlantationDriverAssignment();
+        assignment.setPlantationId(plantationId);
+        assignment.setDriverId(DRIVER_ID);
+        assignment.setDriverName("Agus Triyanto");
+        assignment.setDriverEmail("agus@sawit.id");
+        return assignment;
+    }
+
+    private String reassignBody(UUID targetId) {
+        return "{\"reassignToPlantationId\":\"" + targetId + "\"}";
     }
 }

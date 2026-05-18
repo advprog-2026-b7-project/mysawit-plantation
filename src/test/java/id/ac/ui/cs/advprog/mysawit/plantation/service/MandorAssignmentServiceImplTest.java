@@ -1,5 +1,7 @@
 package id.ac.ui.cs.advprog.mysawit.plantation.service;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -7,11 +9,14 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import id.ac.ui.cs.advprog.mysawit.plantation.dto.request.AssignMandorRequest;
+import id.ac.ui.cs.advprog.mysawit.plantation.dto.request.ReassignPlantationRequest;
 import id.ac.ui.cs.advprog.mysawit.plantation.dto.response.MandorAssignmentResponse;
 import id.ac.ui.cs.advprog.mysawit.plantation.entity.Plantation;
 import id.ac.ui.cs.advprog.mysawit.plantation.exception.MandorAlreadyAssignedException;
 import id.ac.ui.cs.advprog.mysawit.plantation.exception.MandorInOtherPlantationException;
+import id.ac.ui.cs.advprog.mysawit.plantation.exception.MandorNotInPlantationException;
 import id.ac.ui.cs.advprog.mysawit.plantation.exception.PlantationNotFoundApiException;
+import id.ac.ui.cs.advprog.mysawit.plantation.exception.ReassignPlantationRequiredException;
 import id.ac.ui.cs.advprog.mysawit.plantation.exception.UserNotFoundException;
 import id.ac.ui.cs.advprog.mysawit.plantation.exception.UserNotMandorException;
 import id.ac.ui.cs.advprog.mysawit.plantation.gateway.UserProfile;
@@ -42,7 +47,7 @@ class MandorAssignmentServiceImplTest {
     private MandorAssignmentServiceImpl mandorAssignmentService;
 
     private UserProfile mandorProfile(UUID id) {
-        return new UserProfile(id, "Budi", "MANDOR", "CERT-001");
+        return new UserProfile(id, "Budi", "budi@mysawit.id", "MANDOR", "CERT-001");
     }
 
     @Test
@@ -115,7 +120,7 @@ class MandorAssignmentServiceImplTest {
         UUID mandorId = UUID.randomUUID();
         Plantation plantation = new Plantation();
         plantation.setMandorId(null);
-        UserProfile notMandor = new UserProfile(mandorId, "Ali", "SUPIR", null);
+        UserProfile notMandor = new UserProfile(mandorId, "Ali", "ali@sawit.id", "SUPIR", null);
         when(plantationRepository.findById(plantationId)).thenReturn(Optional.of(plantation));
         when(userProfileGateway.findById(mandorId)).thenReturn(Optional.of(notMandor));
         AssignMandorRequest request = new AssignMandorRequest();
@@ -148,16 +153,33 @@ class MandorAssignmentServiceImplTest {
     }
 
     @Test
-    void unassign_success_clearsMandorFields() {
-        UUID plantationId = UUID.randomUUID();
-        Plantation plantation = new Plantation();
-        plantation.setMandorId(UUID.randomUUID());
-        plantation.setMandorName("Budi");
-        plantation.setMandorCertificationNumber("CERT-001");
-        when(plantationRepository.findById(plantationId)).thenReturn(Optional.of(plantation));
-        when(plantationRepository.save(plantation)).thenReturn(plantation);
-        mandorAssignmentService.unassign(plantationId);
-        verify(plantationRepository).save(plantation);
+    void unassign_success_reassignsMandorToTarget() {
+        UUID sourceId = UUID.randomUUID();
+        UUID targetId = UUID.randomUUID();
+        UUID mandorId = UUID.randomUUID();
+        Plantation source = new Plantation();
+        source.setMandorId(mandorId);
+        source.setMandorName("Budi");
+        source.setMandorEmail("budi@mysawit.id");
+        source.setMandorCertificationNumber("CERT-001");
+        Plantation target = new Plantation();
+        target.setId(targetId);
+        ReassignPlantationRequest request = reassignRequest(targetId);
+        MandorAssignmentResponse expected = new MandorAssignmentResponse();
+        when(plantationRepository.findById(sourceId)).thenReturn(Optional.of(source));
+        when(plantationRepository.findById(targetId)).thenReturn(Optional.of(target));
+        when(plantationRepository.save(source)).thenReturn(source);
+        when(plantationRepository.save(target)).thenReturn(target);
+        when(plantationMapper.toMandorAssignmentResponse(any(), any(), any()))
+                .thenReturn(expected);
+
+        MandorAssignmentResponse result = mandorAssignmentService.unassign(sourceId, request);
+
+        assertSame(expected, result);
+        assertNull(source.getMandorId());
+        assertEquals(mandorId, target.getMandorId());
+        verify(plantationRepository).save(source);
+        verify(plantationRepository).save(target);
     }
 
     @Test
@@ -166,7 +188,61 @@ class MandorAssignmentServiceImplTest {
         when(plantationRepository.findById(plantationId)).thenReturn(Optional.empty());
         assertThrows(
                 PlantationNotFoundApiException.class,
-                () -> mandorAssignmentService.unassign(plantationId)
+                () -> mandorAssignmentService.unassign(
+                        plantationId,
+                        reassignRequest(UUID.randomUUID())
+                )
         );
+    }
+
+    @Test
+    void unassign_withoutTarget_throws() {
+        UUID sourceId = UUID.randomUUID();
+        Plantation source = new Plantation();
+        source.setMandorId(UUID.randomUUID());
+        when(plantationRepository.findById(sourceId)).thenReturn(Optional.of(source));
+
+        assertThrows(
+                ReassignPlantationRequiredException.class,
+                () -> mandorAssignmentService.unassign(sourceId, new ReassignPlantationRequest())
+        );
+    }
+
+    @Test
+    void unassign_sourceWithoutMandor_throws() {
+        UUID sourceId = UUID.randomUUID();
+        Plantation source = new Plantation();
+        when(plantationRepository.findById(sourceId)).thenReturn(Optional.of(source));
+
+        assertThrows(
+                MandorNotInPlantationException.class,
+                () -> mandorAssignmentService.unassign(
+                        sourceId,
+                        reassignRequest(UUID.randomUUID())
+                )
+        );
+    }
+
+    @Test
+    void unassign_targetAlreadyHasMandor_throws() {
+        UUID sourceId = UUID.randomUUID();
+        UUID targetId = UUID.randomUUID();
+        Plantation source = new Plantation();
+        source.setMandorId(UUID.randomUUID());
+        Plantation target = new Plantation();
+        target.setMandorId(UUID.randomUUID());
+        when(plantationRepository.findById(sourceId)).thenReturn(Optional.of(source));
+        when(plantationRepository.findById(targetId)).thenReturn(Optional.of(target));
+
+        assertThrows(
+                MandorAlreadyAssignedException.class,
+                () -> mandorAssignmentService.unassign(sourceId, reassignRequest(targetId))
+        );
+    }
+
+    private ReassignPlantationRequest reassignRequest(UUID targetId) {
+        ReassignPlantationRequest request = new ReassignPlantationRequest();
+        request.setReassignToPlantationId(targetId);
+        return request;
     }
 }

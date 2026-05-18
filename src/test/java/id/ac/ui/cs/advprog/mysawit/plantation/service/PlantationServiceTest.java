@@ -7,10 +7,13 @@ import static org.mockito.Mockito.when;
 import id.ac.ui.cs.advprog.mysawit.plantation.dto.request.AssignDriverRequest;
 import id.ac.ui.cs.advprog.mysawit.plantation.dto.request.AssignMandorRequest;
 import id.ac.ui.cs.advprog.mysawit.plantation.dto.request.CreatePlantationRequest;
+import id.ac.ui.cs.advprog.mysawit.plantation.dto.request.ReassignPlantationRequest;
 import id.ac.ui.cs.advprog.mysawit.plantation.dto.request.UpdatePlantationRequest;
 import id.ac.ui.cs.advprog.mysawit.plantation.dto.response.DriverAssignmentResponse;
 import id.ac.ui.cs.advprog.mysawit.plantation.dto.response.MandorAssignmentResponse;
+import id.ac.ui.cs.advprog.mysawit.plantation.dto.response.PageResponse;
 import id.ac.ui.cs.advprog.mysawit.plantation.dto.response.PlantationDetailResponse;
+import id.ac.ui.cs.advprog.mysawit.plantation.dto.response.PlantationListItemResponse;
 import id.ac.ui.cs.advprog.mysawit.plantation.dto.response.PlantationResponse;
 import id.ac.ui.cs.advprog.mysawit.plantation.dto.response.PlantationUpdateResponse;
 import id.ac.ui.cs.advprog.mysawit.plantation.security.JwtAdminGuard;
@@ -18,6 +21,8 @@ import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -96,9 +101,13 @@ class PlantationServiceTest {
     void unassignMandor_callsGuardThenDelegates() {
         String header = "Bearer token";
         UUID id = UUID.randomUUID();
-        plantationService.unassignMandor(header, id);
+        ReassignPlantationRequest request = new ReassignPlantationRequest();
+        MandorAssignmentResponse expected = new MandorAssignmentResponse();
+        when(mandorAssignmentService.unassign(id, request)).thenReturn(expected);
+        MandorAssignmentResponse result = plantationService.unassignMandor(header, id, request);
         verify(jwtAdminGuard).requireAdmin(header);
-        verify(mandorAssignmentService).unassign(id);
+        verify(mandorAssignmentService).unassign(id, request);
+        assertSame(expected, result);
     }
 
     @Test
@@ -119,19 +128,28 @@ class PlantationServiceTest {
         String header = "Bearer token";
         UUID plantationId = UUID.randomUUID();
         UUID driverId = UUID.randomUUID();
-        plantationService.unassignDriver(header, plantationId, driverId);
+        ReassignPlantationRequest request = new ReassignPlantationRequest();
+        DriverAssignmentResponse expected = new DriverAssignmentResponse();
+        when(driverAssignmentService.unassign(plantationId, driverId, request))
+                .thenReturn(expected);
+        DriverAssignmentResponse result =
+                plantationService.unassignDriver(header, plantationId, driverId, request);
         verify(jwtAdminGuard).requireAdmin(header);
-        verify(driverAssignmentService).unassign(plantationId, driverId);
+        verify(driverAssignmentService).unassign(plantationId, driverId, request);
+        assertSame(expected, result);
     }
 
     @Test
     void getAll_callsGuardThenDelegates() {
         String header = "Bearer token";
-        List<PlantationResponse> expected = List.of(new PlantationResponse());
-        when(queryService.getAll("name", "code")).thenReturn(expected);
-        List<PlantationResponse> result = plantationService.getAll(header, "name", "code");
+        Pageable pageable = PageRequest.of(0, 20);
+        PageResponse<PlantationListItemResponse> expected =
+                new PageResponse<>(List.of(new PlantationListItemResponse()), 0, 20, 1, 1);
+        when(queryService.getAll("name", "code", pageable)).thenReturn(expected);
+        PageResponse<PlantationListItemResponse> result =
+                plantationService.getAll(header, "name", "code", pageable);
         verify(jwtAdminGuard).requireAdmin(header);
-        verify(queryService).getAll("name", "code");
+        verify(queryService).getAll("name", "code", pageable);
         assertSame(expected, result);
     }
 
@@ -139,11 +157,13 @@ class PlantationServiceTest {
     void getById_callsGuardThenDelegates() {
         String header = "Bearer token";
         UUID id = UUID.randomUUID();
+        Pageable pageable = PageRequest.of(0, 20);
         PlantationDetailResponse expected = new PlantationDetailResponse();
-        when(queryService.getById(id)).thenReturn(expected);
-        PlantationDetailResponse result = plantationService.getById(header, id);
+        when(queryService.getById(id, "agus", pageable)).thenReturn(expected);
+        PlantationDetailResponse result =
+                plantationService.getById(header, id, "agus", pageable);
         verify(jwtAdminGuard).requireAdmin(header);
-        verify(queryService).getById(id);
+        verify(queryService).getById(id, "agus", pageable);
         assertSame(expected, result);
     }
 }

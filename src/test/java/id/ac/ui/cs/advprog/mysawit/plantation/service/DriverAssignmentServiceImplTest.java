@@ -1,5 +1,6 @@
 package id.ac.ui.cs.advprog.mysawit.plantation.service;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -7,12 +8,14 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import id.ac.ui.cs.advprog.mysawit.plantation.dto.request.AssignDriverRequest;
+import id.ac.ui.cs.advprog.mysawit.plantation.dto.request.ReassignPlantationRequest;
 import id.ac.ui.cs.advprog.mysawit.plantation.dto.response.DriverAssignmentResponse;
 import id.ac.ui.cs.advprog.mysawit.plantation.entity.Plantation;
 import id.ac.ui.cs.advprog.mysawit.plantation.entity.PlantationDriverAssignment;
 import id.ac.ui.cs.advprog.mysawit.plantation.exception.DriverAlreadyInPlantationException;
 import id.ac.ui.cs.advprog.mysawit.plantation.exception.DriverNotInPlantationException;
 import id.ac.ui.cs.advprog.mysawit.plantation.exception.PlantationNotFoundApiException;
+import id.ac.ui.cs.advprog.mysawit.plantation.exception.ReassignPlantationRequiredException;
 import id.ac.ui.cs.advprog.mysawit.plantation.exception.UserNotFoundException;
 import id.ac.ui.cs.advprog.mysawit.plantation.exception.UserNotDriverException;
 import id.ac.ui.cs.advprog.mysawit.plantation.gateway.UserProfile;
@@ -47,7 +50,7 @@ class DriverAssignmentServiceImplTest {
     private DriverAssignmentServiceImpl driverAssignmentService;
 
     private UserProfile supirProfile(UUID id) {
-        return new UserProfile(id, "Ali", "SUPIR", null);
+        return new UserProfile(id, "Ali", "ali@sawit.id", "SUPIR", null);
     }
 
     @Test
@@ -102,7 +105,8 @@ class DriverAssignmentServiceImplTest {
     void assign_userNotSupir_throws() {
         UUID plantationId = UUID.randomUUID();
         UUID driverId = UUID.randomUUID();
-        UserProfile notSupir = new UserProfile(driverId, "Budi", "MANDOR", "CERT-1");
+        UserProfile notSupir =
+                new UserProfile(driverId, "Budi", "budi@mysawit.id", "MANDOR", "CERT-1");
         when(plantationRepository.findById(plantationId))
                 .thenReturn(Optional.of(new Plantation()));
         when(userProfileGateway.findById(driverId)).thenReturn(Optional.of(notSupir));
@@ -135,15 +139,35 @@ class DriverAssignmentServiceImplTest {
     @Test
     void unassign_success() {
         UUID plantationId = UUID.randomUUID();
+        UUID targetPlantationId = UUID.randomUUID();
         UUID driverId = UUID.randomUUID();
         PlantationDriverAssignment assignment = new PlantationDriverAssignment();
+        assignment.setDriverId(driverId);
+        assignment.setDriverName("Ali");
+        assignment.setDriverEmail("ali@sawit.id");
+        ReassignPlantationRequest request = reassignRequest(targetPlantationId);
+        DriverAssignmentResponse expected = new DriverAssignmentResponse();
         when(plantationRepository.findById(plantationId))
+                .thenReturn(Optional.of(new Plantation()));
+        when(plantationRepository.findById(targetPlantationId))
                 .thenReturn(Optional.of(new Plantation()));
         when(plantationDriverAssignmentRepository
                 .findByPlantationIdAndDriverId(plantationId, driverId))
                 .thenReturn(Optional.of(assignment));
-        driverAssignmentService.unassign(plantationId, driverId);
-        verify(plantationDriverAssignmentRepository).delete(assignment);
+        when(plantationDriverAssignmentRepository.existsByPlantationIdAndDriverId(
+                targetPlantationId,
+                driverId
+        )).thenReturn(false);
+        when(plantationDriverAssignmentRepository.save(assignment)).thenReturn(assignment);
+        when(plantationMapper.toDriverAssignmentResponse(any(), any()))
+                .thenReturn(expected);
+
+        DriverAssignmentResponse result =
+                driverAssignmentService.unassign(plantationId, driverId, request);
+
+        assertSame(expected, result);
+        assertEquals(targetPlantationId, assignment.getPlantationId());
+        verify(plantationDriverAssignmentRepository).save(assignment);
     }
 
     @Test
@@ -152,7 +176,11 @@ class DriverAssignmentServiceImplTest {
         when(plantationRepository.findById(plantationId)).thenReturn(Optional.empty());
         assertThrows(
                 PlantationNotFoundApiException.class,
-                () -> driverAssignmentService.unassign(plantationId, UUID.randomUUID())
+                () -> driverAssignmentService.unassign(
+                        plantationId,
+                        UUID.randomUUID(),
+                        reassignRequest(UUID.randomUUID())
+                )
         );
     }
 
@@ -167,7 +195,66 @@ class DriverAssignmentServiceImplTest {
                 .thenReturn(Optional.empty());
         assertThrows(
                 DriverNotInPlantationException.class,
-                () -> driverAssignmentService.unassign(plantationId, driverId)
+                () -> driverAssignmentService.unassign(
+                        plantationId,
+                        driverId,
+                        reassignRequest(UUID.randomUUID())
+                )
         );
+    }
+
+    @Test
+    void unassign_withoutTarget_throws() {
+        UUID plantationId = UUID.randomUUID();
+        UUID driverId = UUID.randomUUID();
+        PlantationDriverAssignment assignment = new PlantationDriverAssignment();
+        when(plantationRepository.findById(plantationId))
+                .thenReturn(Optional.of(new Plantation()));
+        when(plantationDriverAssignmentRepository
+                .findByPlantationIdAndDriverId(plantationId, driverId))
+                .thenReturn(Optional.of(assignment));
+
+        assertThrows(
+                ReassignPlantationRequiredException.class,
+                () -> driverAssignmentService.unassign(
+                        plantationId,
+                        driverId,
+                        new ReassignPlantationRequest()
+                )
+        );
+    }
+
+    @Test
+    void unassign_driverAlreadyInTarget_throws() {
+        UUID plantationId = UUID.randomUUID();
+        UUID targetPlantationId = UUID.randomUUID();
+        UUID driverId = UUID.randomUUID();
+        PlantationDriverAssignment assignment = new PlantationDriverAssignment();
+        when(plantationRepository.findById(plantationId))
+                .thenReturn(Optional.of(new Plantation()));
+        when(plantationRepository.findById(targetPlantationId))
+                .thenReturn(Optional.of(new Plantation()));
+        when(plantationDriverAssignmentRepository
+                .findByPlantationIdAndDriverId(plantationId, driverId))
+                .thenReturn(Optional.of(assignment));
+        when(plantationDriverAssignmentRepository.existsByPlantationIdAndDriverId(
+                targetPlantationId,
+                driverId
+        )).thenReturn(true);
+
+        assertThrows(
+                DriverAlreadyInPlantationException.class,
+                () -> driverAssignmentService.unassign(
+                        plantationId,
+                        driverId,
+                        reassignRequest(targetPlantationId)
+                )
+        );
+    }
+
+    private ReassignPlantationRequest reassignRequest(UUID targetId) {
+        ReassignPlantationRequest request = new ReassignPlantationRequest();
+        request.setReassignToPlantationId(targetId);
+        return request;
     }
 }

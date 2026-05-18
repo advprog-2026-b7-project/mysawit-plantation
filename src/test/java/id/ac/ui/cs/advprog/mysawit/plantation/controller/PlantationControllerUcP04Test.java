@@ -1,5 +1,8 @@
 package id.ac.ui.cs.advprog.mysawit.plantation.controller;
 
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -136,6 +139,84 @@ class PlantationControllerUcP04Test {
                 .andExpect(jsonPath("$.errors[0].code").value("FORBIDDEN"));
     }
 
+    @Test
+    void unassignMandorReassignsToTargetPlantation() throws Exception {
+        Plantation source = createPlantationEntity("Kebun Source", "KBN-408");
+        source.setMandorId(MANDOR_ID);
+        source.setMandorName("Budi Santoso");
+        source.setMandorEmail("budi@mysawit.id");
+        source.setMandorCertificationNumber("CERT-2024-001");
+        source = plantationRepository.save(source);
+        Plantation target = plantationRepository.save(
+                createPlantationEntity("Kebun Target", "KBN-409")
+        );
+
+        mockMvc.perform(delete("/api/v1/plantations/{plantationId}/mandor", source.getId())
+                        .header("Authorization", adminToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(reassignBody(target.getId())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("success"))
+                .andExpect(jsonPath("$.data.plantationId").value(target.getId().toString()))
+                .andExpect(jsonPath("$.data.mandor.id").value(MANDOR_ID.toString()));
+
+        Plantation updatedSource = plantationRepository.findById(source.getId()).orElseThrow();
+        Plantation updatedTarget = plantationRepository.findById(target.getId()).orElseThrow();
+        assertNull(updatedSource.getMandorId());
+        assertEquals(MANDOR_ID, updatedTarget.getMandorId());
+    }
+
+    @Test
+    void unassignMandorRequiresReassignTarget() throws Exception {
+        Plantation source = createPlantationEntity("Kebun Source", "KBN-410");
+        source.setMandorId(MANDOR_ID);
+        source.setMandorName("Budi Santoso");
+        source = plantationRepository.save(source);
+
+        mockMvc.perform(delete("/api/v1/plantations/{plantationId}/mandor", source.getId())
+                        .header("Authorization", adminToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors[0].code")
+                        .value("REASSIGN_PLANTATION_REQUIRED"));
+    }
+
+    @Test
+    void unassignMandorTargetNotFound() throws Exception {
+        Plantation source = createPlantationEntity("Kebun Source", "KBN-411");
+        source.setMandorId(MANDOR_ID);
+        source.setMandorName("Budi Santoso");
+        source = plantationRepository.save(source);
+
+        mockMvc.perform(delete("/api/v1/plantations/{plantationId}/mandor", source.getId())
+                        .header("Authorization", adminToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(reassignBody(UUID.randomUUID())))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.errors[0].code").value("PLANTATION_NOT_FOUND"));
+    }
+
+    @Test
+    void unassignMandorTargetAlreadyHasMandor() throws Exception {
+        Plantation source = createPlantationEntity("Kebun Source", "KBN-412");
+        source.setMandorId(MANDOR_ID);
+        source.setMandorName("Budi Santoso");
+        source = plantationRepository.save(source);
+
+        Plantation target = createPlantationEntity("Kebun Target", "KBN-413");
+        target.setMandorId(UUID.randomUUID());
+        target.setMandorName("Other Mandor");
+        target = plantationRepository.save(target);
+
+        mockMvc.perform(delete("/api/v1/plantations/{plantationId}/mandor", source.getId())
+                        .header("Authorization", adminToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(reassignBody(target.getId())))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.errors[0].code").value("MANDOR_ALREADY_ASSIGNED"));
+    }
+
     private Plantation createPlantationEntity(String name, String code) {
         Plantation plantation = new Plantation();
         plantation.setName(name);
@@ -176,5 +257,9 @@ class PlantationControllerUcP04Test {
 
     private String userToken() {
         return JwtTestHelper.userBearer("MANDOR");
+    }
+
+    private String reassignBody(UUID targetId) {
+        return "{\"reassignToPlantationId\":\"" + targetId + "\"}";
     }
 }
