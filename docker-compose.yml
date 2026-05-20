@@ -8,6 +8,8 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://host.docker.internal:5435/mysawit_plantation
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: postgres
+      AUTH_SERVICE_BASE_URL: ${AUTH_SERVICE_BASE_URL:-http://host.docker.internal:8080}
+      JWT_SECRET: ${JWT_SECRET:-dev-local-secret-for-plantation-change-me!!}
 
     ports:
       - "8081:8081"
