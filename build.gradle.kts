@@ -6,7 +6,7 @@ plugins {
     checkstyle
     id("org.springframework.boot") version "3.2.2"
     id("io.spring.dependency-management") version "1.1.7"
-    id("org.sonarqube") version "4.4.1.3373"
+    id("org.sonarqube") version "7.2.3.7755"
 
 }
 
@@ -68,4 +68,14 @@ tasks.jacocoTestReport {
 checkstyle {
     toolVersion = "10.12.5"
     isIgnoreFailures = false
+}
+
+sonar {
+    properties {
+        property("sonar.projectKey", "advprog-2026-b7-project_mysawit-plantation")
+        property("sonar.projectName", "mysawit-plantation")
+        property("sonar.organization", "adpro-kelompok-b7")
+        property("sonar.host.url", "https://sonarcloud.io")
+        property("sonar.coverage.jacoco.xmlReportPaths", "build/reports/jacoco/test/jacocoTestReport.xml")
+    }
 }
