@@ -12,7 +12,7 @@ public class JwtAdminGuard {
 
     private final JwtClaimsVerifier claimsVerifier;
 
-    @Value("${inter.service.api-key:mysawit-internal-secret-key-2024}")
+    @Value("${inter.service.api-key}")
     private String internalApiKey;
 
     public void requireAdmin(String authorizationHeader) {
